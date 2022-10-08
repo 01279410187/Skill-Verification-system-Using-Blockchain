@@ -36,7 +36,29 @@ contract DSkill{
     bool curruntly_working;
     uint256 company_id;
     bool is_approved;
+    string user_name;
   }
+  struct Certificate{
+    string url;
+    string issue_date;
+    string valid_till;
+    string name;
+    uint256 id;
+    string issuer;
+  }
+
+  struct Endorsment {
+    uint256 endorser_id;
+    string date;
+    string comment;
+  }
+  struct Skill {
+    uint256 id;
+    string name;
+    bool verified;
+    uint256[] skill_certifications;
+    uint256[] skill_endorsements;
+}
 
     mapping(string=>address) public email_to_address;
     mapping(address=>uint256) public address_to_id;
@@ -44,6 +66,9 @@ contract DSkill{
 
     Company[] companies;
     User[] employees;
+    Skill[]skills;
+    Certificate[] certifications;
+    Endorsment[] endorsments;
     Experience[] experiences;
     function memcmp(bytes memory a, bytes memory b)
         internal
@@ -81,7 +106,7 @@ contract DSkill{
             address_to_id[msg.sender]=new_company.id;
             new_company.currunt_employees=new uint256[](0);
             new_company.previous_employees=new uint256[](0);
-            new_company.requested_employees=new uint256[](0);
+          
             is_company[msg.sender]=true;
         }
     }
@@ -109,7 +134,71 @@ contract DSkill{
         address_to_id[new_address]=id;
     }
 
+    modifier veryfiyUser(uint256 userId){
+        require(userId==address_to_id[msg.sender]);
+        _;
+    }
+    function add_experience(uint userId, string calldata starting_date,string calldata ending_date,string calldata role,uint256 company_id) veryfiyUser(userId) public{
 
+        Experience storage new_experience= experiences.push();
+        new_experience.start_date=starting_date;
+        new_experience.end_date=ending_date;
+        new_experience.company_id=company_id;
+        new_experience.role=role;
+        new_experience.curruntly_working=false;
+        new_experience.is_approved=false;
+        
+        new_experience.user_name=employees[userId].name;
+        employees[userId].user_work_experience.push(experiences.length-1);
+        companies[company_id].requested_employees.push(experiences.length-1);
+
+
+    }
+
+    function approve_experience(uint256 exp_id,uint256 company_id)public{
+
+        require((is_company[msg.sender]&& companies[address_to_id[msg.sender]].id==experiences[exp_id].company_id) || (employees[address_to_id[msg.sender]].is_manager && employees[address_to_id[msg.sender]].company_id==experiences[exp_id].company_id),"error: approver should be the company account or a manager of the required company");
+         
+        uint256 i;
+        experiences[exp_id].is_approved=true;
+
+        for (i=0 ;i< companies[company_id].requested_employees.length;i++){
+            if(companies[company_id].requested_employees[i]==exp_id){
+                companies[company_id].requested_employees[i]=0;
+                break;
+            }
+
+        }
+
+        for(i=0; i<companies[company_id].currunt_employees.length;i++){
+            if(companies[company_id].currunt_employees[i]==0){
+                companies[company_id].currunt_employees[i]=exp_id;
+
+            }
+
+        }
+        if(i==companies[company_id].currunt_employees.length){
+            companies[company_id].currunt_employees.push(exp_id);
+        }
+
+    }
+     
+
+
+    constructor(){
+        User storage dummy_user=employees.push();
+        dummy_user.name="dummy";
+        dummy_user.wallet_address=msg.sender;
+        dummy_user.id=0;
+        dummy_user.user_skills=new uint256[](0);
+        dummy_user.user_work_experience=new uint[](0);
+    }
+     
+
+
+     function approve_manager(uint256 employee_Id) public{
+        //require(em);
+     }
 
 
 }

@@ -127,7 +127,7 @@ function App() {
           <button style={{ backgroundColor: "#eee",marginTop:"20px"}} onClick={login}>
             login
           </button>
-          {state.account ?  <><h4> Account Details</h4>
+          {state.account && Email ?  <><h4> Account Details</h4>
           <p>{state.account}</p>
           <p>{Name}</p>
           <p>{Email}</p>
